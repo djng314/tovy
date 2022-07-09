@@ -4,6 +4,31 @@
       <p class="text-h4 font-weight-bold mt-14">Staff</p>
     </v-container>
     <v-container>
+      <v-autocomplete
+        :items="susers"
+        outlined
+        cache-items
+        hide-details="auto"
+        color="blue-grey lighten-2"
+        label="Search"
+        item-text="username"
+        @input="(i) => goto('/profile/' + i)"
+        item-value="id"
+        @update:search-input="(i) => autoinput(i)"
+        class="mt-1"
+      >
+        <template v-slot:item="data">
+          <template>
+            <v-list-item-avatar>
+              <img :src="data.item.pfp" />
+            </v-list-item-avatar>
+            <v-list-item-content>
+              <v-list-item-title v-html="data.item.username"></v-list-item-title>
+              <v-list-item-subtitle v-html="data.item.displayName"></v-list-item-subtitle>
+            </v-list-item-content>
+          </template>
+        </template>
+      </v-autocomplete>
       <v-layout wrap class="mb-7">
         <v-btn
           class="my-auto mr-2 mt-2"
@@ -98,6 +123,7 @@
                       <v-card-text class="mt-n6 grey--text"
                         >@{{ item.username }}</v-card-text
                       >
+                      <v-card-text class="mt-n6 grey--text">{{ item.time }}</v-card-text>
                     </div></v-layout
                   >
                 </div>
@@ -106,7 +132,6 @@
                   <v-btn color="success" plain @click="goto(`/profile/${item.userId}`)">
                     View profile
                   </v-btn>
-                  
                 </v-layout>
               </v-card></v-col
             ></v-row
@@ -153,11 +178,10 @@
 
       <v-dialog v-model="prompt.visible" max-width="400">
         <v-card v-if="prompt.type == 'reset'" :loading="prompt.loading">
-          <v-card-title
-            >Reset actvity
-          </v-card-title>
+          <v-card-title>Reset actvity </v-card-title>
           <v-card-text class="mt-n3">
-            Are you sure you want to reset the activity of the selected users? This action is irrvesible
+            Are you sure you want to reset the activity of the selected users? This action
+            is irrvesible
           </v-card-text>
           <v-btn
             elevation="0"
@@ -268,12 +292,13 @@ export default {
       color: "success",
       visible: false,
     },
+    susers: [],
 
     data: [],
   }),
   components: {},
   mounted: function () {
-    this.$http.get("/group/roles", { withCredentials: true }).then((response) => {
+    this.$http.get("/settings/groles", { withCredentials: true }).then((response) => {
       this.groles = response.data.roles.splice(1);
     });
   },
@@ -304,7 +329,7 @@ export default {
         .post(
           "/mactivity/change",
           {
-            mins: this.prompt.value,
+            mins: parseInt(this.prompt.value),
             users: this.data.filter((item) => item.selected).map((item) => item.userId),
             type: this.prompt.type,
           },
@@ -316,7 +341,18 @@ export default {
           this.toast.visible = true;
           this.prompt.visible = false;
         });
-    }, resetactivity: function () {
+    }, autoinput: function (input) {
+      console.log("woo");
+      console.log(input);
+      if (!input) return (this.Susers = []);
+      this.$http.get("/staff/search?keyword=" + input).then((response) => {
+        this.susers = response.data.users.map((u) => ({
+          ...u,
+          selected: false,
+        }));
+      });
+    },
+    resetactivity: function () {
       this.prompt.loading = true;
       this.$http
         .post(
@@ -336,7 +372,7 @@ export default {
     updatemembers: function () {
       this.loading = true;
       this.$http
-        .get("/group/members?role=" + this.srole, { withCredentials: true })
+        .get("/staff/gmembers?role=" + this.srole, { withCredentials: true })
         .then((response) => {
           this.data = response.data.members;
           this.loading = false;

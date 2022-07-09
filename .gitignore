@@ -2,9 +2,11 @@
 node_modules
 /dist
 
+/backend/.env
 
 # local env files
 .env.local
+.vsls.json
 *.env
 .env.*.local
 
